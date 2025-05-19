@@ -1,0 +1,115 @@
+// Student Management System in Java
+import java.util.*;
+import java.io.*;
+
+class Student implements Serializable {
+    int id;
+    String name;
+    int age;
+    double gpa;
+
+    public Student(int id, String name, int age, double gpa) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+        this.gpa = gpa;
+    }
+
+    @Override
+    public String toString() {
+        return "ID: " + id + ", Name: " + name + ", Age: " + age + ", GPA: " + gpa;
+    }
+}
+
+public class StudentManagementSystem {
+    static ArrayList<Student> students = new ArrayList<>();
+    static final String FILE_NAME = "students.dat";
+
+    public static void main(String[] args) {
+        loadStudents();
+        Scanner sc = new Scanner(System.in);
+        int choice;
+        do {
+            System.out.println("\n=== Student Management System ===");
+            System.out.println("1. Add Student");
+            System.out.println("2. View All Students");
+            System.out.println("3. Search Student");
+            System.out.println("4. Delete Student");
+            System.out.println("5. Save and Exit");
+            System.out.print("Enter choice: ");
+            choice = sc.nextInt();
+            sc.nextLine();
+            switch (choice) {
+                case 1 -> addStudent(sc);
+                case 2 -> viewStudents();
+                case 3 -> searchStudent(sc);
+                case 4 -> deleteStudent(sc);
+                case 5 -> saveStudents();
+                default -> System.out.println("Invalid choice.");
+            }
+        } while (choice != 5);
+    }
+
+    static void addStudent(Scanner sc) {
+        System.out.print("Enter ID: ");
+        int id = sc.nextInt();
+        sc.nextLine();
+        System.out.print("Enter Name: ");
+        String name = sc.nextLine();
+        System.out.print("Enter Age: ");
+        int age = sc.nextInt();
+        System.out.print("Enter GPA: ");
+        double gpa = sc.nextDouble();
+        students.add(new Student(id, name, age, gpa));
+        System.out.println("Student added successfully.");
+    }
+
+    static void viewStudents() {
+        if (students.isEmpty()) {
+            System.out.println("No students to show.");
+            return;
+        }
+        System.out.println("\n--- All Students ---");
+        for (Student s : students) {
+            System.out.println(s);
+        }
+    }
+
+    static void searchStudent(Scanner sc) {
+        System.out.print("Enter student name or ID to search: ");
+        String keyword = sc.nextLine().toLowerCase();
+        boolean found = false;
+        for (Student s : students) {
+            if (String.valueOf(s.id).equals(keyword) || s.name.toLowerCase().contains(keyword)) {
+                System.out.println(s);
+                found = true;
+            }
+        }
+        if (!found) System.out.println("Student not found.");
+    }
+
+    static void deleteStudent(Scanner sc) {
+        System.out.print("Enter student ID to delete: ");
+        int id = sc.nextInt();
+        boolean removed = students.removeIf(s -> s.id == id);
+        if (removed) System.out.println("Student deleted.");
+        else System.out.println("Student not found.");
+    }
+
+    static void saveStudents() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
+            oos.writeObject(students);
+            System.out.println("Data saved successfully.");
+        } catch (IOException e) {
+            System.out.println("Error saving data: " + e.getMessage());
+        }
+    }
+
+    static void loadStudents() {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(FILE_NAME))) {
+            students = (ArrayList<Student>) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Starting fresh. No previous data found.");
+        }
+    }
+}
