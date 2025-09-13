@@ -1,0 +1,108 @@
+// RobotsAwareCrawler.java
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.util.regex.*;
+
+public class RobotsAwareCrawler {
+    private final Set<String> visited = new HashSet<>();
+    private final Queue<String> queue = new LinkedList<>();
+    private final Map<String, List<String>> disallowCache = new HashMap<>();
+    private final int maxPages;
+    private final int delayMillis;
+
+    public RobotsAwareCrawler(int maxPages, int delayMillis) {
+        this.maxPages = maxPages;
+        this.delayMillis = delayMillis;
+    }
+
+    private List<String> fetchRobots(String base) {
+        try {
+            if (disallowCache.containsKey(base)) return disallowCache.get(base);
+            URL robotsUrl = new URL(base + "/robots.txt");
+            BufferedReader br = new BufferedReader(new InputStreamReader(robotsUrl.openStream()));
+            String line; List<String> dis = new ArrayList<>();
+            boolean applicable = false;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.toLowerCase().startsWith("user-agent:")) {
+                    applicable = line.substring(11).trim().equals("*");
+                } else if (applicable && line.toLowerCase().startsWith("disallow:")) {
+                    String path = line.substring(9).trim();
+                    if (!path.isEmpty()) dis.add(path);
+                } else if (line.isEmpty()) {
+                    applicable = false;
+                }
+            }
+            br.close();
+            disallowCache.put(base, dis);
+            return dis;
+        } catch (Exception e) {
+            disallowCache.put(base, Collections.emptyList());
+            return Collections.emptyList();
+        }
+    }
+
+    private boolean allowedByRobots(String urlStr) {
+        try {
+            URL url = new URL(urlStr);
+            String base = url.getProtocol() + "://" + url.getHost();
+            List<String> dis = fetchRobots(base);
+            String path = url.getPath();
+            for (String d : dis) {
+                if (d.equals("/")) return false;
+                if (path.startsWith(d)) return false;
+            }
+            return true;
+        } catch (Exception e) { return false; }
+    }
+
+    private String fetch(String urlStr) {
+        try {
+            Thread.sleep(delayMillis);
+            HttpURLConnection con = (HttpURLConnection) new URL(urlStr).openConnection();
+            con.setRequestProperty("User-Agent", "Ammaar-RobotsCrawler/1.0");
+            con.setConnectTimeout(5000);
+            con.setReadTimeout(5000);
+            if (con.getResponseCode() >= 400) return null;
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+                StringBuilder sb = new StringBuilder(); String l;
+                while ((l = br.readLine()) != null) sb.append(l).append('\n');
+                return sb.toString();
+            }
+        } catch (Exception e) { return null; }
+    }
+
+    private List<String> extractLinks(String html) {
+        List<String> links = new ArrayList<>();
+        Matcher m = Pattern.compile("href=[\"'](http[s]?://[^\"'#>\\s]+)[\"']", Pattern.CASE_INSENSITIVE).matcher(html);
+        while (m.find()) links.add(m.group(1));
+        return links;
+    }
+
+    public void crawl(String seed) {
+        queue.offer(seed);
+        while (!queue.isEmpty() && visited.size() < maxPages) {
+            String url = queue.poll();
+            if (visited.contains(url)) continue;
+            if (!allowedByRobots(url)) {
+                System.out.println("Disallowed by robots.txt: " + url);
+                continue;
+            }
+            System.out.println("Crawling: " + url);
+            String html = fetch(url);
+            visited.add(url);
+            if (html == null) continue;
+            for (String link : extractLinks(html)) {
+                if (!visited.contains(link)) queue.offer(link);
+            }
+        }
+        System.out.println("Finished. Visited count: " + visited.size());
+    }
+
+    public static void main(String[] args) {
+        String seed = args.length > 0 ? args[0] : "https://example.com";
+        RobotsAwareCrawler c = new RobotsAwareCrawler(50, 500); // 50 pages, 500ms delay
+        c.crawl(seed);
+    }
+}
