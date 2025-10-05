@@ -1,0 +1,13 @@
+// CpuTempReader.java
+import java.nio.file.*;
+
+public class CpuTempReader {
+    public static void main(String[] args) {
+        try {
+            String temp = Files.readString(Path.of("/sys/class/thermal/thermal_zone0/temp"));
+            System.out.println("CPU Temp: " + Integer.parseInt(temp.trim()) / 1000 + "°C");
+        } catch (Exception e) {
+            System.out.println("Cannot access temperature!");
+        }
+    }
+}
