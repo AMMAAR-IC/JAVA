@@ -1,0 +1,10 @@
+// MdToPdfSkeleton.java
+import java.nio.file.*;
+
+public class MdToPdfSkeleton {
+    public static void main(String[] args) throws Exception {
+        String md = Files.readString(Path.of("README.md"));
+        // Convert markdown -> HTML (use commonmark), then HTML -> PDF (openhtmltopdf)
+        System.out.println("Read markdown (" + md.length() + " chars). Add CommonMark + OpenHTMLToPDF to convert.");
+    }
+}
