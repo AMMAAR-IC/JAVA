@@ -1,0 +1,27 @@
+import java.net.*;
+import java.io.*;
+import java.util.*;
+
+public class TechFingerprinter {
+    public static void main(String[] args) throws Exception {
+        String site = "https://github.com";
+        HttpURLConnection c = (HttpURLConnection) new URL(site).openConnection();
+        c.setRequestProperty("User-Agent", "Mozilla");
+        String html = new String(c.getInputStream().readAllBytes());
+
+        Map<String,String> tech = new LinkedHashMap<>();
+        tech.put("Cloudflare", "cf-ray");
+        tech.put("Nginx", "nginx");
+        tech.put("Apache", "apache");
+        tech.put("PHP", "php");
+        tech.put("React", "react");
+        tech.put("WordPress", "wp-content");
+
+        System.out.println("Technologies found:");
+        String headers = c.getHeaderFields().toString().toLowerCase();
+        for (var t : tech.entrySet()) {
+            if (headers.contains(t.getValue()) || html.toLowerCase().contains(t.getValue()))
+                System.out.println("• " + t.getKey());
+        }
+    }
+}
