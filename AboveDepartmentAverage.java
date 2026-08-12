@@ -1,0 +1,46 @@
+import java.util.*;
+import java.util.stream.*;
+
+record Employee(
+    String name,
+    String dept,
+    int salary
+){}
+
+public class AboveDepartmentAverage {
+
+    public static void main(String[] args){
+
+        List<Employee> employees=
+            List.of(
+                new Employee("Alex","IT",90000),
+                new Employee("Sam","IT",60000),
+                new Employee("John","IT",70000),
+                new Employee("Emma","HR",80000),
+                new Employee("Mike","HR",50000)
+            );
+
+        Map<String,Double> averages=
+
+            employees.stream()
+                     .collect(
+                         Collectors.groupingBy(
+                             Employee::dept,
+                             Collectors.averagingInt(
+                                 Employee::salary
+                             )
+                         )
+                     );
+
+        employees.stream()
+                 .filter(
+                     e ->
+                     e.salary()
+                     >
+                     averages.get(e.dept())
+                 )
+                 .forEach(
+                     System.out::println
+                 );
+    }
+}
